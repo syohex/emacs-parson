@@ -80,24 +80,37 @@ hash_value(emacs_env *env, emacs_value hash, emacs_value key)
 	return env->funcall(env, Qgethash, 2, args);
 }
 
-static emacs_value
-emacs_value_to_string(emacs_env *env, emacs_value value)
+static intmax_t
+emacs_value_to_string(emacs_env *env, emacs_value value, char *ptr)
 {
 	emacs_value type = env->type_of(env, value);
-	emacs_value Qconcat = env->intern(env, "concat");
 
 	if (!env->is_not_nil(env, value)) {
-		return env->make_string(env, "null", 4);
+		memcpy(ptr, "null", 4);
+		return 4;
 	} else if (env->eq(env, value, env->intern(env, "t"))) {
-		return env->make_string(env, "true", 4);
-	} else if (eq_type(env, type, "integer") || eq_type(env, type, "float")) {
-		emacs_value Qnumber_to_string = env->intern(env, "number-to-string");
-		emacs_value args[1] = { value };
-		return env->funcall(env, Qnumber_to_string, 1, args);
+		memcpy(ptr, "true", 4);
+		return 4;
+	} else if (eq_type(env, type, "integer")) {
+		char b[32];
+		int step = snprintf(b, sizeof(b), "%ld", env->extract_integer(env, value));
+		memcpy(ptr, b, step);
+		return step;
+	} else if (eq_type(env, type, "float")) {
+		char b[64];
+		int step = snprintf(b, sizeof(b), "%g", env->extract_float(env, value));
+		memcpy(ptr, b, step);
+		return step;
 	} else if (eq_type(env, type, "symbol")) {
 		emacs_value Qsymbol_name = env->intern(env, "symbol-name");
 		emacs_value args[1] = { value };
-		return env->funcall(env, Qsymbol_name, 1, args);
+		emacs_value name = env->funcall(env, Qsymbol_name, 1, args);
+
+		ptrdiff_t len = 0;
+		env->copy_string_contents(env, name, NULL, &len);
+		env->copy_string_contents(env, name, ptr, &len);
+
+		return (intmax_t)len;
 	} else if (eq_type(env, type, "string")) {
 		emacs_value str = value;
 		ptrdiff_t len = 0;
@@ -106,16 +119,14 @@ emacs_value_to_string(emacs_env *env, emacs_value value)
 		char *str_buf = malloc(len);
 		env->copy_string_contents(env, str, str_buf, &len);
 
-		char *ptr = str_buf;
-		char *buf = malloc(1 << 20);
+		char *p = str_buf;
+		char *buf = malloc(len * 2);
 		size_t count = 0;
 
 		buf[count++] = '\"';
 
-		while (*ptr != '\0') {
-			// TODO realloc
-
-			switch (*ptr) {
+		while (*p != '\0') {
+			switch (*p) {
 			case '\\':
 				buf[count++] = '\\';
 				buf[count++] = '\\';
@@ -145,66 +156,62 @@ emacs_value_to_string(emacs_env *env, emacs_value value)
 				buf[count++] = 't';
 				break;
 			default:
-				buf[count++] = *ptr;
+				buf[count++] = *p;
 				break;
 			}
 
-			++ptr;
+			++p;
 		}
 
 		buf[count++] = '\"';
 		buf[count] = '\0';
 
-		emacs_value ret = env->make_string(env, buf, count);
+		memcpy(ptr, buf, count);
 		free(buf);
 		free(str_buf);
-		return ret;
+		return count;
 	} else if (eq_type(env, type, "vector")) {
 		emacs_value vec = value;
 		intmax_t len = env->vec_size(env, vec);
 
-		emacs_value *concat_args = malloc(sizeof(emacs_value) * (len + 2));
-		concat_args[0] = env->make_string(env, "[", 1);
+		char *orig = ptr;
+		*ptr++ = '[';
 
 		for (ptrdiff_t i = 0; i < len; ++i) {
-			concat_args[i+1] = emacs_value_to_string(env, env->vec_get(env, vec, i));
+			ptr += emacs_value_to_string(env, env->vec_get(env, vec, i), ptr);
 		}
 
-		concat_args[len+1] = env->make_string(env, "]", 1);
-
-		emacs_value ret = env->funcall(env, Qconcat, len + 2, concat_args);
-		free(concat_args);
-		return ret;
+		*ptr++ = ']';
+		return (intmax_t)(ptr - orig);
 	} else if (eq_type(env, type, "hash-table")) {
 		emacs_value hash = value;
 		emacs_value keys = hash_keys(env, hash);
 		intmax_t size = list_length(env, keys);
 
-		intmax_t arg_num = (size * 4) + 2 - 1; // (key+val+comma), ({+}), last comma
-		emacs_value *concat_args = malloc(sizeof(emacs_value) * arg_num);
-		concat_args[0] = env->make_string(env, "{", 1);
+		char *orig = ptr;
+		*ptr++ = '{';
 
 		for (intmax_t i = 0; i < size; ++i) {
 			emacs_value k = list_nth(env, keys, i);
 			emacs_value v = hash_value(env, hash, k);
 
-			concat_args[1+(i*4)] = emacs_value_to_string(env, k);
-			concat_args[1+(i*4)+1] = env->make_string(env, ":", 1);
-			concat_args[1+(i*4)+2] = emacs_value_to_string(env, v);
+			intmax_t len = emacs_value_to_string(env, k, ptr);
+			ptr += len;
 
-			if (i + 1 != size) {
-				concat_args[1+(i*4)+3] = env->make_string(env, ",", 1);
-			}
+			*ptr++ = ':';
+
+			len = emacs_value_to_string(env, v, ptr);
+			ptr += len;
+
+			if (i + 1 != size)
+				*ptr++ = ',';
 		}
 
-		concat_args[(4*size)] = env->make_string(env, "}", 1);
-
-		emacs_value ret = env->funcall(env, Qconcat, arg_num, concat_args);
-		free(concat_args);
-		return ret;
+		*ptr++ = '}';
+		return (intmax_t)(ptr - orig);
 	}
 
-	return env->make_string(env, "", 0);
+	return 0;
 }
 
 static emacs_value
@@ -284,7 +291,13 @@ json_value_to_emacs_value(emacs_env *env, JSON_Value* value)
 static emacs_value
 Fperson_stringify(emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
 {
-	return emacs_value_to_string(env, args[0]);
+	// TODO: realloc
+	char *buffer = (char*)malloc(1 << 20);
+	intmax_t len = emacs_value_to_string(env, args[0], buffer);
+
+	emacs_value ret = env->make_string(env, buffer, len);
+	free(buffer);
+	return ret;
 }
 
 static emacs_value
