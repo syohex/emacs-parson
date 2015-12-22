@@ -245,7 +245,9 @@ json_value_to_emacs_value(emacs_env *env, JSON_Value* value)
 			pairs[i] = env->funcall(env, Qcons, 2, cons_args);
 		}
 
-		return env->funcall(env, env->intern(env, "list"), len, pairs);
+		emacs_value ret = env->funcall(env, env->intern(env, "list"), len, pairs);
+		free(pairs);
+		return ret;
 	}
 	case JSONArray: {
 		JSON_Array *array = json_value_get_array(value);
