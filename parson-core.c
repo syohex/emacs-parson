@@ -110,7 +110,7 @@ emacs_value_to_string(emacs_env *env, emacs_value value, char *ptr)
 		env->copy_string_contents(env, name, NULL, &len);
 		env->copy_string_contents(env, name, ptr, &len);
 
-		return (intmax_t)len;
+		return (intmax_t)(len-1);
 	} else if (eq_type(env, type, "string")) {
 		emacs_value str = value;
 		ptrdiff_t len = 0;
