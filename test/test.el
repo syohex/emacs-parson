@@ -43,7 +43,7 @@
 
 (ert-deftest stringify-boolean ()
   "Stringify boolean"
-  (should (string= (parson-stringify t) "true")))
+  (should (string= (parson-stringify 't) "true")))
 
 (ert-deftest stringify-symbol ()
   "Stringify symbol"
@@ -76,7 +76,7 @@
 (ert-deftest stringify-object-with-boolean-key-and-float-value ()
   "Stringify object which has boolean key and float value"
   (let ((hash (make-hash-table)))
-    (puthash t 5.0 hash)
+    (puthash 'true 5.0 hash)
     (should (string= (parson-stringify hash) "{\"true\":5}"))))
 
 (ert-deftest stringify-object-with-object-key-and-float-value ()
@@ -93,7 +93,7 @@
 
 (ert-deftest stringify-array-with-few-elements ()
   "Stringify array which has few elements"
-  (should (string= (parson-stringify [1 t "foo"]) "[1,true,\"foo\"")))
+  (should (string= (parson-stringify [1 t "foo"]) "[1,true,\"foo\"]")))
 
 (ert-deftest stringify-object-with-several-keys ()
   "Stringify object which has several keys"
