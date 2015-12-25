@@ -26,58 +26,58 @@
 
 (ert-deftest parse-object ()
   "Parse object"
-  (equal (parson-parse "{\"foo\": \"bar\"}") '(("foo" . "bar"))))
+  (should (equal (parson-parse "{\"foo\": \"bar\"}") '(("foo" . "bar")))))
 
 (ert-deftest parse-null ()
   "Parse 'null'"
-  (equal (parson-parse "{\"foo\": null}") '(("foo" . nil))))
+  (should (equal (parson-parse "{\"foo\": null}") '(("foo" . nil)))))
 
 (ert-deftest parse-array ()
   "Parse array"
-  (string= (aref (parson-parse "[true, \"foo\"]") 1) "foo"))
+  (should (string= (aref (parson-parse "[true, \"foo\"]") 1) "foo")))
 
 (ert-deftest parse-multi-byte ()
   "Parse multibyte"
-  (equal (parson-parse "{\"あいうえお\": \"かきくけこ\"}")
-         '(("あいうえお" . "かきくけこ"))))
+  (should (equal (parson-parse "{\"あいうえお\": \"かきくけこ\"}")
+                 '(("あいうえお" . "かきくけこ")))))
 
 (ert-deftest stringify-boolean ()
   "Stringify boolean"
-  (string= (parson-stringify t) "true"))
+  (should (string= (parson-stringify t) "true")))
 
 (ert-deftest stringify-symbol ()
   "Stringify symbol"
-  (string= (parson-stringify 'symbol) "symbol"))
+  (should (string= (parson-stringify 'symbol) "symbol")))
 
 (ert-deftest stringify-object-with-string-value ()
   "Stringify object which has string value"
   (let ((hash (make-hash-table)))
     (puthash "foo" "bar" hash)
-    (string= (parson-stringify hash) "{\"foo\":\"bar\"}")))
+    (should (string= (parson-stringify hash) "{\"foo\":\"bar\"}"))))
 
 (ert-deftest stringify-object-with-numeric-value ()
   "Stringify object which has numeric value"
   (let ((hash (make-hash-table)))
     (puthash "foo" 1 hash)
-    (string= (parson-stringify hash) "{\"foo\":1}")))
+    (should (string= (parson-stringify hash) "{\"foo\":1}"))))
 
 (ert-deftest stringify-object-with-float-value ()
   "Stringify object which has float value"
   (let ((hash (make-hash-table)))
     (puthash "foo" 0.5 hash)
-    (string= (parson-stringify hash) "{\"foo\":0.5}")))
+    (should (string= (parson-stringify hash) "{\"foo\":0.5}"))))
 
 (ert-deftest stringify-object-with-nil-value ()
   "Stringify object which has 'nil'"
   (let ((hash (make-hash-table)))
     (puthash "foo" nil hash)
-    (string= (parson-stringify hash) "{\"foo\":null}")))
+    (should (string= (parson-stringify hash) "{\"foo\":null}"))))
 
 (ert-deftest stringify-object-with-boolean-key-and-float-value ()
   "Stringify object which has boolean key and float value"
   (let ((hash (make-hash-table)))
     (puthash t 5.0 hash)
-    (string= (parson-stringify hash) "{\"true\":5}")))
+    (should (string= (parson-stringify hash) "{\"true\":5}"))))
 
 (ert-deftest stringify-object-with-object-key-and-float-value ()
   "Stringify object which has object key and float value"
@@ -85,15 +85,15 @@
         (keyhash (make-hash-table)))
     (puthash "foo" "bar" keyhash)
     (puthash keyhash 1.5 hash)
-    (string= (parson-stringify hash) "{{\"foo\":\"bar\"}:1.5}")))
+    (should (string= (parson-stringify hash) "{{\"foo\":\"bar\"}:1.5}"))))
 
 (ert-deftest stringify-empty-array ()
   "Stringify empty array"
-  (string= (parson-stringify []) "["))
+  (should (string= (parson-stringify []) "[]")))
 
 (ert-deftest stringify-array-with-few-elements ()
   "Stringify array which has few elements"
-  (string= (parson-stringify [1 t "foo"]) "[1,true,\"foo\""))
+  (should (string= (parson-stringify [1 t "foo"]) "[1,true,\"foo\"")))
 
 (ert-deftest stringify-object-with-several-keys ()
   "Stringify object which has several keys"
