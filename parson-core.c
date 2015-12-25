@@ -179,6 +179,8 @@ emacs_value_to_string(emacs_env *env, emacs_value value, char *ptr)
 
 		for (ptrdiff_t i = 0; i < len; ++i) {
 			ptr += emacs_value_to_string(env, env->vec_get(env, vec, i), ptr);
+			if (i + 1 != len)
+				*ptr++ = ',';
 		}
 
 		*ptr++ = ']';
