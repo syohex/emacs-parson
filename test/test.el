@@ -85,7 +85,7 @@
         (keyhash (make-hash-table)))
     (puthash "foo" "bar" keyhash)
     (puthash keyhash 1.5 hash)
-    (should (string= (parson-stringify hash) "{{\"foo\":\"bar\"}:1.5}"))))
+    (should (string= (parson-stringify hash) "{\"{\"foo\":\"bar\"}\":1.5}"))))
 
 (ert-deftest stringify-empty-array ()
   "Stringify empty array"

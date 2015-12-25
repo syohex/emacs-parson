@@ -196,9 +196,16 @@ emacs_value_to_string(emacs_env *env, emacs_value value, char *ptr)
 		for (intmax_t i = 0; i < size; ++i) {
 			emacs_value k = list_nth(env, keys, i);
 			emacs_value v = hash_value(env, hash, k);
+			bool is_key_string = eq_type(env, env->type_of(env, k), "string");
+
+			if (!is_key_string)
+				*ptr++ = '\"';
 
 			intmax_t len = emacs_value_to_string(env, k, ptr);
 			ptr += len;
+
+			if (!is_key_string)
+				*ptr++ = '\"';
 
 			*ptr++ = ':';
 
