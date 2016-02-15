@@ -18,48 +18,33 @@ Parse JSON string `string` and return Emacs Lisp object.
 Encode `object` into JSON.
 
 
-## Benchmark(parson vs json standard library)
+## Benchmark(parson vs json.el standard library)
 
-### Encode into JSON
+- **Y-axis means second.**
+- **Lower is better**
 
-Encoding with parson is very slower than json.el.
+Benchmark code is under `bench/`.
 
-```lisp
-;; Elapsed time: 2.457449s (1.600100s in 240 GCs)
-(benchmark 1000000 '(json-encode [t]))
+#### Encoding scalar 100,000 times
 
-;; Elapsed time: 7.456625s (1.547315s in 230 GCs)
-(benchmark 1000000 '(parson-stringify [t]))
-```
+![encoding-scalar](image/encode-scalar.png)
 
-```lisp
-(setq hash (make-hash-table))
+#### Encoding 5 elements list 100,000 times
 
-;; Elapsed time: 1.926598s (0.805901s in 120 GCs)
-(benchmark 1000000 '(json-encode hash))
+![encoding-list](image/encode-list.png)
 
-;; Elapsed time: 12.183582s (2.782884s in 350 GCs)
-(benchmark 1000000 '(parson-stringify hash))
-```
+#### Encoding [complex object](bench/bench.json) 10,000 times
 
-### Decode from JSON
+![encoding-object](image/encode-object.png)
 
-```lisp
-;; Elapsed time: 17.331068s (3.556868s in 460 GCs)
-(benchmark 1000000 '(json-read-from-string "[true]"))
+#### Decoding empty list 100,000 times
 
-;; Elapsed time: 8.857157s (7.057974s in 270 GCs)
-(benchmark 1000000 '(parson-parse "[true]"))
-```
+![encoding-list](image/decode-list.png)
 
-```lisp
-;; Elapsed time: 34.019030s (23.648462s in 480 GCs)
-(benchmark 1000000 '(json-read-from-string "{}"))
+#### Decoding empty object 100,000 times
 
+![encoding-object](image/decode-object.png)
 
-;; Elapsed time: 13.595240s (11.947698s in 251 GCs)
-(benchmark 1000000 '(parson-parse "{}"))
-```
 
 ## License
 
